@@ -220,7 +220,7 @@ def additionalShippingFeeFunc(tOp, tOpSch, dcostFuelAll, costShipAll, costShipBa
 
 def demandScenarioFunc(year,kDem1,kDem2,kDem3,kDem4):
     Di = (kDem1*year**2 + kDem2*year + kDem3)*1000000000/kDem4
-    print(year, ', ', Di, ', ', (kDem1*year**2 + kDem2*year + kDem3)*1000000000)
+    print(year, ', ', Di, ', ', (kDem1*year**2 + kDem2*year + kDem3)*1000000000, ', ', kDem4)
     return Di
 
 def orderShipFunc(fleetAll,numCompany,fuelName,WPS,SPS,CCS,CAPcnt,tOpSch,tbid,iniT,currentYear,parameterFile2,parameterFile3,parameterFile5):
