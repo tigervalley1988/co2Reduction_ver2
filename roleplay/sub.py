@@ -286,7 +286,7 @@ def yearlyOperationFunc(fleetAll,numCompany,overDi,startYear,elapsedYear,NShipFl
         if fleetAll[numCompany][i]['delivery'] <= currentYear and fleetAll[numCompany][i]['tOp'] < tOpSch:
             tOpTemp = fleetAll[numCompany][i]['tOp']
             unitCostFuel, unitCostFuelHFO = unitCostFuelFunc(parameterFile4,fleetAll[numCompany][i]['fuelName'],currentYear)
-            Di = overDi + demandScenarioFunc(currentYear,valueDict["kDem1"],valueDict["kDem2"],valueDict["kDem3"],valueDict["kDem4"])
+            Di = overDi + demandScenarioFunc(currentYear,valueDict["kDem1"],valueDict["kDem2"],valueDict["kDem3"],valueDict["kDem4"]) /3
             if Di / maxCta <= 1.0 and Di / maxCta > 0.0:
                 fleetAll[numCompany][i]['rocc'][tOpTemp] = Di / maxCta
             elif Di / maxCta > 1.0:
