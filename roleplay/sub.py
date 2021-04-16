@@ -279,6 +279,7 @@ def yearlyOperationFunc(fleetAll,numCompany,overDi,startYear,elapsedYear,NShipFl
             fleetAll[numCompany][i]['wFLD'][tOpTemp] = wFLDFunc(valueDict["kFLD1"],fleetAll[numCompany][i]['wDWT'][tOpTemp],valueDict["kFLD2"])
             fleetAll[numCompany][i]['d'][tOpTemp] = dFunc(valueDict["Dyear"],valueDict["Hday"],fleetAll[numCompany][i]['v'][tOpTemp],valueDict["Rrun"])
             maxCta += NShipFleet * maxCtaFunc(fleetAll[numCompany][i]['CAPcnt'],fleetAll[numCompany][i]['d'][tOpTemp])
+            print(currentYear, ', ', numCompany, ', ', i, ', ', fleetAll[numCompany][i]['CAPcnt'], ', ', fleetAll[numCompany][i]['d'][tOpTemp], ', ', maxCta)
             j += 1
 
     numFleetAlive = 0
