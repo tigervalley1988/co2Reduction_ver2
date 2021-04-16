@@ -220,6 +220,7 @@ def additionalShippingFeeFunc(tOp, tOpSch, dcostFuelAll, costShipAll, costShipBa
 
 def demandScenarioFunc(year,kDem1,kDem2,kDem3,kDem4):
     Di = (kDem1*year**2 + kDem2*year + kDem3)*1000000000/kDem4
+    print(year, ', ', Di, ', ', (kDem1*year**2 + kDem2*year + kDem3)*1000000000)
     return Di
 
 def orderShipFunc(fleetAll,numCompany,fuelName,WPS,SPS,CCS,CAPcnt,tOpSch,tbid,iniT,currentYear,parameterFile2,parameterFile3,parameterFile5):
@@ -294,7 +295,7 @@ def yearlyOperationFunc(fleetAll,numCompany,overDi,startYear,elapsedYear,NShipFl
             else:
                 print('ERROR: rocc should be 0.0 < rocc but now',Di/maxCta,'.')
                 sys.exit()
-            print(currentYear, ', ', numCompany, ':', i, ':', fleetAll[numCompany][i]['rocc'][tOpTemp], Di)
+            #print(currentYear, ', ', numCompany, ':', i, ':', fleetAll[numCompany][i]['rocc'][tOpTemp], Di)
             fleetAll[numCompany][i]['cta'][tOpTemp] = ctaFunc(fleetAll[numCompany][i]['CAPcnt'],fleetAll[numCompany][i]['rocc'][tOpTemp],fleetAll[numCompany][i]['d'][tOpTemp])
             fleetAll[numCompany][i]['fShipORG'][tOpTemp], fleetAll[numCompany][i]['fShip'][tOpTemp] = fShipFunc(valueDict["kShip1"],valueDict["kShip2"],fleetAll[numCompany][i]['wDWT'][tOpTemp],fleetAll[numCompany][i]['wFLD'][tOpTemp],fleetAll[numCompany][i]['rocc'][tOpTemp],valueDict["CNM2km"],fleetAll[numCompany][i]['v'][tOpTemp],fleetAll[numCompany][i]['d'][tOpTemp],valueDict["rWPS"],fleetAll[numCompany][i]['WPS'],fleetAll[numCompany][i]['CeqLHV'])
             fleetAll[numCompany][i]['fAuxORG'][tOpTemp], fleetAll[numCompany][i]['fAux'][tOpTemp] = fAuxFunc(valueDict["Dyear"],valueDict["Hday"],valueDict["Rrun"],valueDict["kAux1"],valueDict["kAux2"],fleetAll[numCompany][i]['wDWT'][tOpTemp],valueDict["rSPS"],fleetAll[numCompany][i]['SPS'])
