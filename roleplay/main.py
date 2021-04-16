@@ -72,7 +72,7 @@ def roleplayRun(decisionListName1,decisionListName2,decisionListName3):
             if decisionList[numCompany][currentYear]['Order']:
                 fleets = rs.orderShipFunc(fleets,numCompany,decisionList[numCompany][currentYear]['fuelType'],decisionList[numCompany][currentYear]['WPS'],decisionList[numCompany][currentYear]['SPS'],decisionList[numCompany][currentYear]['CCS'],decisionList[numCompany][currentYear]['CAP'],tOpSch,tbid,0,currentYear,parameterFile2,parameterFile3,parameterFile5)
             fleets = rs.yearlyOperationFunc(fleets,numCompany,overDi,startYear,elapsedYear,NShipFleet,Alpha,tOpSch,decisionList[numCompany][currentYear]['Speed'],valueDict,parameterFile4)
-            print(currentYear, numCompany, overDi, elapsedYear)
+            print(currentYear, numCompany, overDi, elapsedYear, fleets[numCompany]['total']['overDi'])
             overDi = fleets[numCompany]['total']['overDi'][elapsedYear]
             scoreTemp.append(fleets[numCompany]['total']['S'][elapsedYear])
         
