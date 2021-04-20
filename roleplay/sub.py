@@ -97,6 +97,9 @@ def fleetPreparationFunc(fleetAll,initialFleetFile,numCompany,startYear,lastYear
     fleetAll[numCompany]['total']['dcostShippingTilde'] = np.zeros(lastYear-startYear+1)
     fleetAll[numCompany]['total']['cta'] = np.zeros(lastYear-startYear+1)
     fleetAll[numCompany]['total']['overDi'] = np.zeros(lastYear-startYear+1)
+    fleetAll[numCompany]['total']['costShipAll'] = np.zeros(lastYear-startYear+1)
+    fleetAll[numCompany]['total']['maxCta'] = np.zeros(lastYear-startYear+1)
+    fleetAll[numCompany]['total']['rocc'] = np.zeros(lastYear-startYear+1)
 
     initialFleets = initialFleetFunc(initialFleetFile)
 
@@ -220,7 +223,6 @@ def additionalShippingFeeFunc(tOp, tOpSch, dcostFuelAll, costShipAll, costShipBa
 
 def demandScenarioFunc(year,kDem1,kDem2,kDem3,kDem4):
     Di = (kDem1*year**2 + kDem2*year + kDem3)*1000000000/kDem4
-    #print(year, ', ', Di, ', ', (kDem1*year**2 + kDem2*year + kDem3)*1000000000, ', ', kDem4)
     return Di
 
 def orderShipFunc(fleetAll,numCompany,fuelName,WPS,SPS,CCS,CAPcnt,tOpSch,tbid,iniT,currentYear,parameterFile2,parameterFile3,parameterFile5):
@@ -236,6 +238,10 @@ def orderShipFunc(fleetAll,numCompany,fuelName,WPS,SPS,CCS,CAPcnt,tOpSch,tbid,in
     fleetAll[numCompany][NumFleet]['rShipBasic'] = rShipBasicFunc(parameterFile5,fleetAll[numCompany][NumFleet]['fuelName'],fleetAll[numCompany][NumFleet]['CAPcnt'])
     fleetAll[numCompany][NumFleet]['delivery'] = currentYear+tbid
     fleetAll[numCompany][NumFleet]['tOp'] = iniT
+    if iniT > 0:
+        fleetAll[numCompany][NumFleet]['costShipBasicHFO'] = 0
+        fleetAll[numCompany][NumFleet]['costShipBasic'] = 0
+        fleetAll[numCompany][NumFleet]['costShipAll'] = 0
     fleetAll[numCompany][NumFleet]['v'] = np.zeros(tOpSch)
     fleetAll[numCompany][NumFleet]['rocc'] = np.zeros(tOpSch)
     fleetAll[numCompany][NumFleet]['wDWT'] = np.zeros(tOpSch)
@@ -256,16 +262,16 @@ def orderShipFunc(fleetAll,numCompany,fuelName,WPS,SPS,CCS,CAPcnt,tOpSch,tbid,in
     fleetAll[numCompany][NumFleet]['g'] = np.zeros(tOpSch)
     fleetAll[numCompany][NumFleet]['cta'] = np.zeros(tOpSch)
     fleetAll[numCompany][NumFleet]['costFuelAll'] = np.zeros(tOpSch)
-    fleetAll[numCompany][NumFleet]['costShipBasicHFO'] = np.zeros(tOpSch)
-    fleetAll[numCompany][NumFleet]['costShipBasic'] = np.zeros(tOpSch)
-    fleetAll[numCompany][NumFleet]['costShipAll'] = np.zeros(tOpSch)
+    #fleetAll[numCompany][NumFleet]['costShipBasicHFO'] = np.zeros(tOpSch)
+    #fleetAll[numCompany][NumFleet]['costShipBasic'] = np.zeros(tOpSch)
+    #fleetAll[numCompany][NumFleet]['costShipAll'] = np.zeros(tOpSch)
     fleetAll[numCompany][NumFleet]['dcostShipping'] = np.zeros(tOpSch)
     fleetAll[numCompany][NumFleet]['gTilde'] = np.zeros(tOpSch)
     fleetAll[numCompany][NumFleet]['dcostShippingTilde'] = np.zeros(tOpSch)
     return fleetAll
 
 #def yearlyOperationFunc(fleetAll,startYear,elapsedYear,NShipFleet,Alpha,tOpSch,v,valueDict,parameterFile4):　# tkinterによるInput用
-def yearlyOperationFunc(fleetAll,numCompany,overDi,startYear,elapsedYear,NShipFleet,Alpha,tOpSch,v,valueDict,parameterFile4):
+def yearlyOperationFunc(fleetAll,numCompany,Dtotal,startYear,elapsedYear,NShipFleet,Alpha,tOpSch,v,valueDict,parameterFile4):
     NumFleet = len(fleetAll[numCompany])
 
     j = 0
@@ -279,33 +285,40 @@ def yearlyOperationFunc(fleetAll,numCompany,overDi,startYear,elapsedYear,NShipFl
             fleetAll[numCompany][i]['wFLD'][tOpTemp] = wFLDFunc(valueDict["kFLD1"],fleetAll[numCompany][i]['wDWT'][tOpTemp],valueDict["kFLD2"])
             fleetAll[numCompany][i]['d'][tOpTemp] = dFunc(valueDict["Dyear"],valueDict["Hday"],fleetAll[numCompany][i]['v'][tOpTemp],valueDict["Rrun"])
             maxCta += NShipFleet * maxCtaFunc(fleetAll[numCompany][i]['CAPcnt'],fleetAll[numCompany][i]['d'][tOpTemp])
-            #print(currentYear, ', ', numCompany, ', ', i, ', ', fleetAll[numCompany][i]['CAPcnt'], ', ', fleetAll[numCompany][i]['d'][tOpTemp], ', ', maxCta)
             j += 1
+    
+    fleetAll[numCompany]['total']['maxCta'][elapsedYear] = maxCta
+    Di = fleetAll[numCompany]['total']['overDi'][elapsedYear] + Dtotal / 3 # depends on score
+    if Di / maxCta <= 1.0 and Di / maxCta > 0.0:
+        fleetAll[numCompany]['total']['rocc'][elapsedYear] = Di / maxCta
+    elif Di / maxCta > 1.0:
+        fleetAll[numCompany]['total']['rocc'][elapsedYear] = 1.0
+        fleetAll[numCompany]['total']['overDi'][elapsedYear] = (Di / maxCta - 1.0) * maxCta
+    else:
+        print('ERROR: rocc should be 0.0 < rocc but now',Di/maxCta,'.')
+        sys.exit()
 
     numFleetAlive = 0
     for i in range(1,NumFleet):
         if fleetAll[numCompany][i]['delivery'] <= currentYear and fleetAll[numCompany][i]['tOp'] < tOpSch:
             tOpTemp = fleetAll[numCompany][i]['tOp']
+            if tOpTemp == 0:
+                print(elapsedYear,costShipFunc(valueDict["kShipBasic1"], fleetAll[numCompany][i]["CAPcnt"], valueDict["kShipBasic2"], fleetAll[numCompany][i]['rShipBasic'], valueDict["dcostWPS"], valueDict["dcostSPS"], valueDict["dcostCCS"], fleetAll[numCompany][i]['WPS'], fleetAll[numCompany][i]['SPS'], fleetAll[numCompany][i]['CCS']))
+                fleetAll[numCompany][i]['costShipBasicHFO'], fleetAll[numCompany][i]['costShipBasic'], fleetAll[numCompany][i]['costShipAll'] = costShipFunc(valueDict["kShipBasic1"], fleetAll[numCompany][i]["CAPcnt"], valueDict["kShipBasic2"], fleetAll[numCompany][i]['rShipBasic'], valueDict["dcostWPS"], valueDict["dcostSPS"], valueDict["dcostCCS"], fleetAll[numCompany][i]['WPS'], fleetAll[numCompany][i]['SPS'], fleetAll[numCompany][i]['CCS'])
+                fleetAll[numCompany]['total']['costShipAll'][elapsedYear] += fleetAll[numCompany][i]['costShipAll']
             unitCostFuel, unitCostFuelHFO = unitCostFuelFunc(parameterFile4,fleetAll[numCompany][i]['fuelName'],currentYear)
-            Di = overDi + demandScenarioFunc(currentYear,valueDict["kDem1"],valueDict["kDem2"],valueDict["kDem3"],valueDict["kDem4"]) /3
-            if Di / maxCta <= 1.0 and Di / maxCta > 0.0:
-                fleetAll[numCompany][i]['rocc'][tOpTemp] = Di / maxCta
-            elif Di / maxCta > 1.0:
-                fleetAll[numCompany][i]['rocc'][tOpTemp] = 1.0
-                fleetAll[numCompany]['total']['overDi'] = (Di / maxCta - 1.0) * maxCta
-            else:
-                print('ERROR: rocc should be 0.0 < rocc but now',Di/maxCta,'.')
-                sys.exit()
-            print(currentYear, ', ', numCompany, ', ', i, ', ', fleetAll[numCompany][i]['rocc'][tOpTemp], ', ', Di, ', ', maxCta)
-            fleetAll[numCompany][i]['cta'][tOpTemp] = ctaFunc(fleetAll[numCompany][i]['CAPcnt'],fleetAll[numCompany][i]['rocc'][tOpTemp],fleetAll[numCompany][i]['d'][tOpTemp])
-            fleetAll[numCompany][i]['fShipORG'][tOpTemp], fleetAll[numCompany][i]['fShip'][tOpTemp] = fShipFunc(valueDict["kShip1"],valueDict["kShip2"],fleetAll[numCompany][i]['wDWT'][tOpTemp],fleetAll[numCompany][i]['wFLD'][tOpTemp],fleetAll[numCompany][i]['rocc'][tOpTemp],valueDict["CNM2km"],fleetAll[numCompany][i]['v'][tOpTemp],fleetAll[numCompany][i]['d'][tOpTemp],valueDict["rWPS"],fleetAll[numCompany][i]['WPS'],fleetAll[numCompany][i]['CeqLHV'])
+            #fleetAll[numCompany][i]['rocc'][tOpTemp] = fleetAll[numCompany]['total']['rocc'][elapsedYear]
+            fleetAll[numCompany][i]['cta'][tOpTemp] = ctaFunc(fleetAll[numCompany][i]['CAPcnt'],fleetAll[numCompany]['total']['rocc'][elapsedYear],fleetAll[numCompany][i]['d'][tOpTemp])
+            fleetAll[numCompany][i]['fShipORG'][tOpTemp], fleetAll[numCompany][i]['fShip'][tOpTemp] = fShipFunc(valueDict["kShip1"],valueDict["kShip2"],fleetAll[numCompany][i]['wDWT'][tOpTemp],fleetAll[numCompany][i]['wFLD'][tOpTemp],fleetAll[numCompany]['total']['rocc'][elapsedYear],valueDict["CNM2km"],fleetAll[numCompany][i]['v'][tOpTemp],fleetAll[numCompany][i]['d'][tOpTemp],valueDict["rWPS"],fleetAll[numCompany][i]['WPS'],fleetAll[numCompany][i]['CeqLHV'])
             fleetAll[numCompany][i]['fAuxORG'][tOpTemp], fleetAll[numCompany][i]['fAux'][tOpTemp] = fAuxFunc(valueDict["Dyear"],valueDict["Hday"],valueDict["Rrun"],valueDict["kAux1"],valueDict["kAux2"],fleetAll[numCompany][i]['wDWT'][tOpTemp],valueDict["rSPS"],fleetAll[numCompany][i]['SPS'])
             fleetAll[numCompany][i]['gORG'][tOpTemp], fleetAll[numCompany][i]['g'][tOpTemp] = gFunc(fleetAll[numCompany][i]['Cco2'],fleetAll[numCompany][i]['fShip'][tOpTemp],valueDict["Cco2DF"],fleetAll[numCompany][i]['fAux'][tOpTemp],valueDict["rCCS"],fleetAll[numCompany][i]['CCS'])     
             fleetAll[numCompany][i]['costFuelShipORG'][tOpTemp], fleetAll[numCompany][i]['costFuelShip'][tOpTemp], fleetAll[numCompany][i]['dcostFuelShip'][tOpTemp] = costFuelShipFunc(unitCostFuelHFO, unitCostFuel, fleetAll[numCompany][i]['fShipORG'][tOpTemp], fleetAll[numCompany][i]['fShip'][tOpTemp])
             fleetAll[numCompany][i]['costFuelAuxORG'][tOpTemp], fleetAll[numCompany][i]['costFuelAux'][tOpTemp], fleetAll[numCompany][i]['dcostFuelAux'][tOpTemp] = costFuelAuxFunc(valueDict["unitCostDF"], fleetAll[numCompany][i]['fAuxORG'][tOpTemp], fleetAll[numCompany][i]['fAux'][tOpTemp])
+            #print(tOpTemp, tOpSch, fleetAll[numCompany][i]['dcostFuelAll'], fleetAll[numCompany][i]['costShipAll'], fleetAll[numCompany][i]['costShipBasicHFO'])
             fleetAll[numCompany][i]['costFuelAll'][tOpTemp], fleetAll[numCompany][i]['dcostFuelAll'][tOpTemp] = costFuelAllFunc(fleetAll[numCompany][i]['costFuelShip'][tOpTemp], fleetAll[numCompany][i]['costFuelAux'][tOpTemp], fleetAll[numCompany][i]['dcostFuelShip'][tOpTemp], fleetAll[numCompany][i]['dcostFuelAux'][tOpTemp])
-            fleetAll[numCompany][i]['costShipBasicHFO'][tOpTemp], fleetAll[numCompany][i]['costShipBasic'][tOpTemp], fleetAll[numCompany][i]['costShipAll'][tOpTemp] = costShipFunc(valueDict["kShipBasic1"], fleetAll[numCompany][i]["CAPcnt"], valueDict["kShipBasic2"], fleetAll[numCompany][i]['rShipBasic'], valueDict["dcostWPS"], valueDict["dcostSPS"], valueDict["dcostCCS"], fleetAll[numCompany][i]['WPS'], fleetAll[numCompany][i]['SPS'], fleetAll[numCompany][i]['CCS'])
-            fleetAll[numCompany][i]['dcostShipping'][tOpTemp] = additionalShippingFeeFunc(tOpTemp, tOpSch, fleetAll[numCompany][i]['dcostFuelAll'][tOpTemp], fleetAll[numCompany][i]['costShipAll'][tOpTemp], fleetAll[numCompany][i]['costShipBasicHFO'][tOpTemp])
+            fleetAll[numCompany][i]['dcostShipping'][tOpTemp] = additionalShippingFeeFunc(tOpTemp, tOpSch, fleetAll[numCompany][i]['dcostFuelAll'][tOpTemp], fleetAll[numCompany][i]['costShipAll'], fleetAll[numCompany][i]['costShipBasicHFO'])
+            if fleetAll[numCompany][i]['cta'][tOpTemp] == 0:
+                print(elapsedYear,numCompany,i,tOpTemp,fleetAll[numCompany][i]['cta'][tOpTemp])
             fleetAll[numCompany][i]['gTilde'][tOpTemp] = fleetAll[numCompany][i]['g'][tOpTemp] / fleetAll[numCompany][i]['cta'][tOpTemp]
             fleetAll[numCompany][i]['dcostShippingTilde'][tOpTemp] = fleetAll[numCompany][i]['dcostShipping'][tOpTemp] / fleetAll[numCompany][i]['cta'][tOpTemp]
             fleetAll[numCompany]['total']['g'][elapsedYear] += NShipFleet * fleetAll[numCompany][i]['g'][tOpTemp]
@@ -553,7 +566,7 @@ def outputEachCompanyFunc(fleetAll,numCompany,startYear,elapsedYear,lastYear,tOp
 def outputAllCompanyFunc(fleetAll,startYear,elapsedYear,lastYear,tOpSch,unitDict,decisionListNameList):
     year = fleetAll['year'][:elapsedYear+1]
     
-    fig, axes = plt.subplots(2, 3, figsize=(12.0, 8.0))
+    fig, axes = plt.subplots(3, 3, figsize=(12.0, 12.0))
     plt.subplots_adjust(wspace=0.4, hspace=0.6)
 
     for j, listName in enumerate(decisionListNameList,1):
